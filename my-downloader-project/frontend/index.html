@@ -301,7 +301,7 @@
                         id="settings-reset"
                         class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium border border-slate-700 transition-colors cursor-pointer"
                     >
-                        Reset Localhost
+                        Reset Default
                     </button>
                 </div>
             </div>
@@ -316,7 +316,7 @@
         // 2. FOR PRODUCTION DEPLOYMENT: Replace the local URL below with your live Render backend URL 
         //    (e.g., 'https://my-downloader-api.onrender.com')
         // ==========================================
-        let BACKEND_BASE_URL = 'http://localhost:8000';
+        let BACKEND_BASE_URL = 'https://swiftslink.onrender.com';
 
         // Load custom URL from localStorage if set
         const customApiUrl = localStorage.getItem('api_base_url');
@@ -432,7 +432,7 @@
         // Reset Settings
         settingsReset.addEventListener('click', async () => {
             localStorage.removeItem('api_base_url');
-            BACKEND_BASE_URL = 'http://localhost:8000';
+            BACKEND_BASE_URL = 'https://swiftslink.onrender.com';
             settingsApiUrl.value = BACKEND_BASE_URL;
             closeModal();
             await checkApiHealth();
