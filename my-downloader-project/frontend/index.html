@@ -47,8 +47,19 @@
                     <p class="text-[10px] text-slate-400 font-mono tracking-widest uppercase">Fast & Unlimited</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-4 text-xs font-mono text-slate-400">
-                <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>API Active</span>
+            <div class="flex items-center space-x-3">
+                <button 
+                    id="btn-settings" 
+                    class="flex items-center space-x-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-700/60 transition-colors cursor-pointer"
+                    title="Configure Backend API URL"
+                >
+                    <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">API Config</span>
+                </button>
+                <div class="flex items-center text-xs font-mono text-slate-400 bg-slate-800/40 px-2.5 py-1.5 rounded-lg border border-slate-800/80">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 mr-2 animate-pulse" id="status-indicator"></span>
+                    <span id="api-status-text">Connected</span>
+                </div>
             </div>
         </div>
     </header>
@@ -247,6 +258,56 @@
         </div>
     </footer>
 
+    <!-- API Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+        <div class="bg-[#111827] border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
+            <button id="modal-close" class="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            
+            <div class="flex items-center space-x-2.5 mb-4">
+                <div class="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white">Connection Settings</h3>
+            </div>
+            
+            <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+                If your frontend is hosted on Vercel and backend is on Render, configure your deployed backend API link below to connect them.
+            </p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="settings-api-url" class="block text-xs font-semibold text-slate-400 mb-1.5">Render Backend API URL</label>
+                    <input 
+                        type="url" 
+                        id="settings-api-url" 
+                        placeholder="https://my-downloader-api.onrender.com" 
+                        class="w-full bg-[#1f2937] border border-slate-700/60 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                    >
+                    <p class="text-[10px] text-slate-500 mt-1.5 leading-normal">
+                        Tip: Avoid trailing slashes or <code class="text-slate-400">/api/extract</code>. Just copy the main domain from Render (e.g. <code class="text-slate-400 font-mono">https://xxxx.onrender.com</code>).
+                    </p>
+                </div>
+                
+                <div class="flex items-center space-x-2.5 pt-2">
+                    <button 
+                        id="settings-save"
+                        class="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-[#0a0f1d] font-bold py-2.5 rounded-xl text-sm cursor-pointer transition-colors"
+                    >
+                        Save & Apply
+                    </button>
+                    <button 
+                        id="settings-reset"
+                        class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-medium border border-slate-700 transition-colors cursor-pointer"
+                    >
+                        Reset Localhost
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Handler -->
     <script>
         // BACKEND CONFIGURATION:
@@ -255,7 +316,18 @@
         // 2. FOR PRODUCTION DEPLOYMENT: Replace the local URL below with your live Render backend URL 
         //    (e.g., 'https://my-downloader-api.onrender.com')
         // ==========================================
-        const BACKEND_BASE_URL = 'https://swiftslink.onrender.com';
+        let BACKEND_BASE_URL = 'http://localhost:8000';
+
+        // Load custom URL from localStorage if set
+        const customApiUrl = localStorage.getItem('api_base_url');
+        if (customApiUrl) {
+            BACKEND_BASE_URL = customApiUrl;
+        }
+
+        // Clean trailing slash if present
+        if (BACKEND_BASE_URL.endsWith('/')) {
+            BACKEND_BASE_URL = BACKEND_BASE_URL.slice(0, -1);
+        }
 
         // DOM elements
         const form = document.getElementById('downloader-form');
@@ -276,6 +348,95 @@
         const videoAuthor = document.getElementById('video-author');
         const formatSelect = document.getElementById('format-select');
         const downloadBtn = document.getElementById('download-btn');
+
+        // DOM Elements for API Config Modal
+        const btnSettings = document.getElementById('btn-settings');
+        const settingsModal = document.getElementById('settings-modal');
+        const modalClose = document.getElementById('modal-close');
+        const settingsApiUrl = document.getElementById('settings-api-url');
+        const settingsSave = document.getElementById('settings-save');
+        const settingsReset = document.getElementById('settings-reset');
+        const apiStatusText = document.getElementById('api-status-text');
+        const statusIndicator = document.getElementById('status-indicator');
+
+        // Populate input with current base URL
+        settingsApiUrl.value = BACKEND_BASE_URL;
+
+        // Function to check health of backend API
+        async function checkApiHealth() {
+            apiStatusText.textContent = 'Connecting...';
+            statusIndicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 mr-2 animate-pulse';
+            
+            try {
+                const response = await fetch(`${BACKEND_BASE_URL}/`, { method: 'GET' });
+                if (response.ok) {
+                    const data = await response.json();
+                    apiStatusText.textContent = 'API Active';
+                    statusIndicator.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 mr-2 animate-pulse';
+                } else {
+                    throw new Error('Non-200 status');
+                }
+            } catch (err) {
+                console.warn('API Health Check failed:', err);
+                apiStatusText.textContent = 'Disconnected';
+                statusIndicator.className = 'w-2.5 h-2.5 rounded-full bg-red-500 mr-2';
+            }
+        }
+
+        // Initialize status check
+        checkApiHealth();
+
+        // Modal triggers
+        btnSettings.addEventListener('click', () => {
+            settingsApiUrl.value = BACKEND_BASE_URL;
+            settingsModal.classList.remove('hidden');
+            settingsModal.classList.add('flex');
+        });
+
+        const closeModal = () => {
+            settingsModal.classList.add('hidden');
+            settingsModal.classList.remove('flex');
+        };
+
+        modalClose.addEventListener('click', closeModal);
+        
+        // Close modal on background click
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                closeModal();
+            }
+        });
+
+        // Save Settings
+        settingsSave.addEventListener('click', async () => {
+            let newUrl = settingsApiUrl.value.trim();
+            if (!newUrl) {
+                alert('Please enter a valid URL.');
+                return;
+            }
+            
+            // Normalize URL format
+            if (!newUrl.startsWith('http://') && !newUrl.startsWith('https://')) {
+                newUrl = 'https://' + newUrl;
+            }
+            if (newUrl.endsWith('/')) {
+                newUrl = newUrl.slice(0, -1);
+            }
+            
+            localStorage.setItem('api_base_url', newUrl);
+            BACKEND_BASE_URL = newUrl;
+            closeModal();
+            await checkApiHealth();
+        });
+
+        // Reset Settings
+        settingsReset.addEventListener('click', async () => {
+            localStorage.removeItem('api_base_url');
+            BACKEND_BASE_URL = 'http://localhost:8000';
+            settingsApiUrl.value = BACKEND_BASE_URL;
+            closeModal();
+            await checkApiHealth();
+        });
 
         // Initializing Lucide Icons
         lucide.createIcons();
@@ -329,7 +490,15 @@
                     body: JSON.stringify({ url: url })
                 });
 
-                const data = await response.json();
+                let data;
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    data = await response.json();
+                } else {
+                    const textContent = await response.text();
+                    console.error("Non-JSON Response received:", textContent);
+                    throw new Error("Invalid Response. The configured Backend URL returned HTML instead of JSON. Please click the 'API Config' button in the top-right header and paste your correct Render Backend URL.");
+                }
 
                 if (!response.ok) {
                     throw new Error(data.detail || 'Failed to extract video information. Verify the link and try again.');
