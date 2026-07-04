@@ -1,0 +1,6 @@
+{
+  "name": "Video Downloader",
+  "description": "High-performance video downloader that extracts and downloads streams from Instagram Reels and YouTube.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

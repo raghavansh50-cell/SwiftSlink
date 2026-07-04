@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSlink - High-Performance Video Downloader</title>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom scrollbar and subtle glowing effects */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+        .glow-effect {
+            box-shadow: 0 0 40px -10px rgba(16, 185, 129, 0.15);
+        }
+        .pulse-border:focus-within {
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-[#0b0f19] text-slate-100 font-sans min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-black">
+
+    <!-- Header Section -->
+    <header class="border-b border-slate-800/80 bg-[#0b0f19]/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/30">
+                    <i data-lucide="download-cloud" class="w-6 h-6 text-emerald-400"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+                        StreamSlink
+                    </h1>
+                    <p class="text-[10px] text-slate-400 font-mono tracking-widest uppercase">Fast & Unlimited</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4 text-xs font-mono text-slate-400">
+                <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>API Active</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow flex items-center justify-center px-4 py-12">
+        <div class="w-full max-w-2xl">
+            
+            <!-- Hero Header Title -->
+            <div class="text-center mb-8">
+                <span class="inline-flex items-center space-x-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-full text-xs font-medium mb-4 animate-fade-in">
+                    <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                    <span>Free Video Extractor</span>
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-3">
+                    Download Reels, Shorts & Videos
+                </h2>
+                <p class="text-slate-400 max-w-md mx-auto text-sm sm:text-base">
+                    Paste your Instagram or YouTube link below to extract direct, high-speed download links. No ads, no limits.
+                </p>
+            </div>
+
+            <!-- Downloader Main Panel -->
+            <div class="bg-[#111827] border border-slate-800/80 rounded-2xl p-6 sm:p-8 glow-effect mb-8">
+                
+                <!-- URL Input Form -->
+                <form id="downloader-form" class="space-y-4">
+                    <div class="relative flex flex-col sm:flex-row gap-3 pulse-border rounded-xl">
+                        <!-- Input container -->
+                        <div class="relative flex-grow">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="link-2" class="w-5 h-5"></i>
+                            </div>
+                            <input 
+                                type="url" 
+                                id="video-url" 
+                                required
+                                placeholder="Paste Instagram Reel or YouTube Video URL..." 
+                                class="w-full bg-[#1f2937] border border-slate-700/60 rounded-xl pl-12 pr-24 py-4 text-sm sm:text-base text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                            >
+                            <!-- Paste Quick-Button -->
+                            <button 
+                                type="button" 
+                                id="btn-paste"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center space-x-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium transition-colors border border-slate-700"
+                                title="Paste from clipboard"
+                            >
+                                <i data-lucide="clipboard" class="w-3.5 h-3.5"></i>
+                                <span>Paste</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <button 
+                            type="submit" 
+                            id="btn-submit"
+                            class="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 active:scale-98 text-[#0a0f1d] font-semibold px-6 py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/10 flex items-center justify-center space-x-2"
+                        >
+                            <span>Extract Video</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Status / Error Messages Container -->
+                <div id="status-container" class="hidden mt-4">
+                    <div id="error-message" class="hidden bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm flex items-start space-x-2.5">
+                        <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                        <span id="error-text">Extraction failed. Please check the URL and try again.</span>
+                    </div>
+                </div>
+
+                <!-- Skeleton Loader / Animated Spinner -->
+                <div id="skeleton-loader" class="hidden mt-8 space-y-6 animate-pulse">
+                    <div class="h-1 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="bg-emerald-500 h-full w-1/3 animate-[infinite_loader_1.5s_ease-in-out]"></div>
+                    </div>
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <!-- Thumbnail skeleton -->
+                        <div class="w-full md:w-48 h-32 bg-slate-800 rounded-xl"></div>
+                        <!-- Meta info skeleton -->
+                        <div class="flex-grow space-y-3 py-1">
+                            <div class="h-4 bg-slate-800 rounded w-3/4"></div>
+                            <div class="h-3 bg-slate-800 rounded w-1/2"></div>
+                            <div class="h-3 bg-slate-800 rounded w-1/4"></div>
+                        </div>
+                    </div>
+                    <div class="h-12 bg-slate-800 rounded-xl"></div>
+                </div>
+
+                <!-- Result Card -->
+                <div id="result-container" class="hidden mt-8 border-t border-slate-800/80 pt-6 animate-fade-in">
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <!-- Thumbnail Preview -->
+                        <div class="relative w-full md:w-52 flex-shrink-0 group rounded-xl overflow-hidden bg-slate-900 border border-slate-800">
+                            <img id="video-thumbnail" src="" alt="Thumbnail" class="w-full h-36 md:h-28 object-cover">
+                            <!-- Duration badge -->
+                            <span id="video-duration" class="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-slate-100 px-2 py-0.5 rounded text-[10px] font-mono">
+                                00:00
+                            </span>
+                            <!-- Platform tag -->
+                            <span id="video-source" class="absolute top-2 left-2 bg-emerald-500/90 text-[#0a0f1d] px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase">
+                                YouTube
+                            </span>
+                        </div>
+
+                        <!-- Video Meta Details -->
+                        <div class="flex-grow flex flex-col justify-between py-1">
+                            <div class="space-y-1.5">
+                                <h3 id="video-title" class="text-base sm:text-lg font-bold text-white leading-snug line-clamp-2">
+                                    Video Title Placeholder
+                                </h3>
+                                <p id="video-author" class="text-xs text-slate-400 flex items-center">
+                                    <i data-lucide="user" class="w-3.5 h-3.5 mr-1 text-slate-500"></i>
+                                    <span>Uploader Name</span>
+                                </p>
+                            </div>
+
+                            <!-- Formats / Selectors if multiple formats are available -->
+                            <div class="mt-4">
+                                <label for="format-select" class="block text-xs font-medium text-slate-400 mb-1.5">Select Quality / Format</label>
+                                <div class="relative">
+                                    <select id="format-select" class="w-full bg-[#1f2937] border border-slate-700/60 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer">
+                                        <!-- Formats populated dynamically -->
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-400">
+                                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Prominent Direct Download Button -->
+                    <div class="mt-6">
+                        <a 
+                            id="download-btn" 
+                            href="#" 
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            class="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 active:scale-99 text-[#0a0f1d] font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/10 flex items-center justify-center space-x-2"
+                        >
+                            <i data-lucide="download-cloud" class="w-5 h-5"></i>
+                            <span class="text-sm">Download Now ⬇️</span>
+                        </a>
+                        <p class="text-[10px] text-center text-slate-500 mt-2.5">
+                            Tip: If the download starts playing in a new tab, right-click and choose "Save Video As..." to save it to your device.
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Features Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-[#111827]/40 border border-slate-800/60 p-4 rounded-xl flex items-start space-x-3">
+                    <div class="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                        <i data-lucide="youtube" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-semibold text-white">YT Shorts & Videos</h4>
+                        <p class="text-[11px] text-slate-400">High-speed, direct streams.</p>
+                    </div>
+                </div>
+                <div class="bg-[#111827]/40 border border-slate-800/60 p-4 rounded-xl flex items-start space-x-3">
+                    <div class="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                        <i data-lucide="instagram" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-semibold text-white">Instagram Reels</h4>
+                        <p class="text-[11px] text-slate-400">Instantly extract HD MP4s.</p>
+                    </div>
+                </div>
+                <div class="bg-[#111827]/40 border border-slate-800/60 p-4 rounded-xl flex items-start space-x-3">
+                    <div class="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg">
+                        <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-semibold text-white">100% Secure & Free</h4>
+                        <p class="text-[11px] text-slate-400">No popups, zero logs.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="border-t border-slate-800/80 py-6 bg-[#070a11]">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <p class="text-xs text-slate-500">
+                &copy; 2026 StreamSlink Downloader. This tool is provided for educational and personal use only. We do not store files on our servers.
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Handler -->
+    <script>
+        // BACKEND CONFIGURATION:
+        // ==========================================
+        // 1. FOR LOCAL DEVELOPMENT: Use 'http://localhost:8000'
+        // 2. FOR PRODUCTION DEPLOYMENT: Replace the local URL below with your live Render backend URL 
+        //    (e.g., 'https://my-downloader-api.onrender.com')
+        // ==========================================
+        const BACKEND_BASE_URL = 'http://localhost:8000';
+
+        // DOM elements
+        const form = document.getElementById('downloader-form');
+        const videoUrlInput = document.getElementById('video-url');
+        const btnPaste = document.getElementById('btn-paste');
+        const btnSubmit = document.getElementById('btn-submit');
+        const statusContainer = document.getElementById('status-container');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const skeletonLoader = document.getElementById('skeleton-loader');
+        const resultContainer = document.getElementById('result-container');
+
+        // Result Elements
+        const videoThumbnail = document.getElementById('video-thumbnail');
+        const videoDuration = document.getElementById('video-duration');
+        const videoSource = document.getElementById('video-source');
+        const videoTitle = document.getElementById('video-title');
+        const videoAuthor = document.getElementById('video-author');
+        const formatSelect = document.getElementById('format-select');
+        const downloadBtn = document.getElementById('download-btn');
+
+        // Initializing Lucide Icons
+        lucide.createIcons();
+
+        // Paste functionality
+        btnPaste.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                videoUrlInput.value = text;
+                // Trigger quick pulse highlight
+                videoUrlInput.classList.add('border-emerald-500');
+                setTimeout(() => videoUrlInput.classList.remove('border-emerald-500'), 1000);
+            } catch (err) {
+                console.error('Could not read clipboard contents: ', err);
+                alert('Please allow clipboard access or paste the URL manually.');
+            }
+        });
+
+        // Store extracted formats globally to handle format switching
+        let currentFormats = [];
+
+        // Handle format dropdown changes
+        formatSelect.addEventListener('change', (e) => {
+            const selectedUrl = e.target.value;
+            downloadBtn.href = selectedUrl;
+        });
+
+        // Form Submit Handler (Extraction Trigger)
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const url = videoUrlInput.value.trim();
+            if (!url) return;
+
+            // Reset UI States
+            statusContainer.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            resultContainer.classList.add('hidden');
+            
+            // Show Loader and disable input
+            skeletonLoader.classList.remove('hidden');
+            btnSubmit.disabled = true;
+            btnSubmit.classList.add('opacity-70');
+
+            try {
+                const response = await fetch(`${BACKEND_BASE_URL}/api/extract`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Failed to extract video information. Verify the link and try again.');
+                }
+
+                // Populate UI with extracted data
+                videoTitle.textContent = data.title;
+                videoAuthor.querySelector('span').textContent = data.author || 'Unknown Creator';
+                videoThumbnail.src = data.thumbnail || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=60';
+                videoDuration.textContent = data.duration_string || '00:00';
+                videoSource.textContent = data.source || 'Video';
+
+                // Populate quality formats
+                formatSelect.innerHTML = '';
+                currentFormats = data.formats || [];
+
+                if (currentFormats.length > 0) {
+                    currentFormats.forEach(f => {
+                        const option = document.createElement('option');
+                        option.value = f.url;
+                        const sizeInfo = f.filesize_approx_mb ? ` (~${f.filesize_approx_mb} MB)` : '';
+                        option.textContent = `${f.quality_label} - ${f.extension.toUpperCase()} (${f.resolution})${sizeInfo}`;
+                        formatSelect.appendChild(option);
+                    });
+                    
+                    // Set default download href to the first format (usually best quality)
+                    downloadBtn.href = currentFormats[0].url;
+                    formatSelect.disabled = false;
+                } else {
+                    // Fallback if no specific formats list
+                    const option = document.createElement('option');
+                    option.value = data.download_url;
+                    option.textContent = 'Best Quality (Direct Stream)';
+                    formatSelect.appendChild(option);
+                    formatSelect.disabled = true;
+                    downloadBtn.href = data.download_url;
+                }
+
+                // Show Result Card
+                resultContainer.classList.remove('hidden');
+
+            } catch (err) {
+                console.error('Extraction Error:', err);
+                errorText.textContent = err.message || 'An unexpected error occurred. Please verify your internet connection.';
+                statusContainer.classList.remove('hidden');
+                errorMessage.classList.remove('hidden');
+            } finally {
+                // Hide Loader & Enable Input
+                skeletonLoader.classList.add('hidden');
+                btnSubmit.disabled = false;
+                btnSubmit.classList.remove('opacity-70');
+            }
+        });
+    </script>
+
+    <!-- Custom Animation Styling for Tailwind loader fallback -->
+    <style>
+        @keyframes loader {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(300%); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+    </style>
+</body>
+</html>
